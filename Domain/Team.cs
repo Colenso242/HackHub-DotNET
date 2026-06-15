@@ -1,42 +1,25 @@
-using HackHub_DotNET.Domain.Enums;
-
 namespace HackHub_DotNET.Domain;
 
-public class Team : BaseEntity
+public class Team : BaseEntity, IAggregateRoot
 {
     public string Name { get; private set; }
-    public User Leader { get; private set; }
-
-    // Optional: a team may not currently be enrolled in a hackathon.
-    public Hackathon? CurrentHackathon { get; internal set; }
+    public Guid LeaderId { get; private set; }
     public bool Deleted { get; private set; }
 
-    public ICollection<User> Members { get; private set; } = new HashSet<User>();
-    public ICollection<Submission> Submissions { get; private set; } = new HashSet<Submission>();
+    private readonly HashSet<Guid> _memberIds = new();
+    public IReadOnlyCollection<Guid> MemberIds => _memberIds;
 
-    //TODO constructor doesnt establish relationship to user
-    public Team(string name, User leader)
+    public Team(string name, Guid leaderId)
     {
         Name = ValidateName(name);
-        Leader = leader ?? throw new ArgumentNullException(nameof(leader));
+        LeaderId = RequireId(leaderId, nameof(leaderId));
     }
 
-    public void AddMember(User user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-        if (Members.Contains(user)) return;
-        Members.Add(user);
-        user.Team = this;
-        user.UserRole = UserRole.TeamMember;
-    }
-    
-    //Todo UserRole is not updated
-    public void RemoveMember(User user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-        if (Members.Remove(user))
-            user.Team = null;
-    }
+    public void AddMember(Guid userId) => _memberIds.Add(RequireId(userId, nameof(userId)));
+
+    public void RemoveMember(Guid userId) => _memberIds.Remove((RequireId(userId,nameof(userId))));
+
+    public bool IsLeader(Guid userId) => userId == LeaderId;
 
     // Soft delete (mirrors the reference @SQLDelete behaviour).
     public void MarkDeleted() => Deleted = true;

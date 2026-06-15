@@ -1,86 +1,67 @@
 using HackHub_DotNET.Domain.Enums;
+using HackHub_DotNET.Domain.ValueObjects;
 
 namespace HackHub_DotNET.Domain;
 
-public class Hackathon : BaseEntity
+public class Hackathon : BaseEntity, IAggregateRoot
 {
     public string Name { get; private set; }
     public string Rules { get; private set; }
     public string Location { get; private set; }
     public double Prize { get; private set; }
     public DateTime EnrollmentDeadline { get; private set; }
-    public DateTime StartDate { get; private set; }
-    public DateTime EndDate { get; private set; }
+    public DateRange Period { get; private set; }
     public HackathonState State { get; private set; }
     public int MaxTeamSize { get; private set; }
-    public User Organizer { get; private set; }
-    public User Judge { get; private set; }
+    public Guid OrganizerId { get; private set; }
+    public Guid JudgeId { get; private set; }
 
     // Optional: there is no winner until the hackathon concludes.
-    public Team? Winner { get; private set; }
+    public Guid? WinnerId { get; private set; }
 
-    public ICollection<User> Mentors { get; private set; } = new HashSet<User>();
-    public ICollection<Team> Teams { get; private set; } = new HashSet<Team>();
-    public ICollection<Submission> Submissions { get; private set; } = new HashSet<Submission>();
+    private readonly HashSet<Guid> _mentorIds = new();
+    private readonly HashSet<Guid> _teamIds = new();
+    public IReadOnlyCollection<Guid> MentorIds => _mentorIds;
+    public IReadOnlyCollection<Guid> TeamIds => _teamIds;
+
+    private Hackathon() { } // for EF Core
 
     //TODO add validation if needed once builder is implemented
     public Hackathon(string name, string rules, string location, double prize,
-                     DateTime enrollmentDeadline, DateTime startDate, DateTime endDate,
-                     HackathonState state, int maxTeamSize, User organizer, User judge,
-                     IEnumerable<User>? mentors = null)
+                     DateTime enrollmentDeadline, DateRange period,
+                     HackathonState state, int maxTeamSize, Guid organizerId, Guid judgeId,
+                     IEnumerable<Guid>? mentorIds = null)
     {
         Name = Require(name, nameof(name));
         Rules = Require(rules, nameof(rules));
         Location = Require(location, nameof(location));
         Prize = prize;
         EnrollmentDeadline = enrollmentDeadline;
-        StartDate = startDate;
-        EndDate = endDate;
+        Period = period ?? throw new ArgumentNullException(nameof(period));
         State = state;
         MaxTeamSize = maxTeamSize;
-        Organizer = organizer ?? throw new ArgumentNullException(nameof(organizer));
-        Judge = judge ?? throw new ArgumentNullException(nameof(judge));
+        OrganizerId = RequireId(organizerId, nameof(organizerId));
+        JudgeId = RequireId(judgeId, nameof(judgeId));
 
-        if (mentors == null) return;
-        foreach (var mentor in mentors)
-            AddMentor(mentor);
+        if (mentorIds == null) return;
+        foreach (var mentorId in mentorIds)
+            AddMentor(mentorId);
     }
 
-    private void AddMentor(User mentor)
-    {
-        ArgumentNullException.ThrowIfNull(mentor);
-        if (Mentors.Contains(mentor)) return;
-        Mentors.Add(mentor);
-        mentor.Hackathon = this;
-    }
+    public void AddMentor(Guid mentorId) => _mentorIds.Add(RequireId(mentorId, nameof(mentorId)));
 
-    public void AddTeam(Team team)
-    {
-        ArgumentNullException.ThrowIfNull(team);
-        if (Teams.Contains(team)) return;
-        Teams.Add(team);
-        team.CurrentHackathon = this;
-    }
+    public void EnrollTeam(Guid teamId) => _teamIds.Add(RequireId(teamId, nameof(teamId)));
 
-    public void AddSubmission(Submission submission)
+    public void ProclaimWinner(Guid teamId)
     {
-        ArgumentNullException.ThrowIfNull(submission);
-        if (!Submissions.Contains(submission))
-            Submissions.Add(submission);
-    }
+        RequireId(teamId, nameof(teamId));
+        if (!_teamIds.Contains(teamId))
+            throw new InvalidOperationException("The winner must be a team enrolled in this hackathon.");
 
-    public void ProclaimWinner(Team winner)
-    {
-        Winner = winner ?? throw new ArgumentNullException(nameof(winner));
+        WinnerId = teamId;
         State = HackathonState.Concluded;
-
-        // Detach mentors and teams from the concluded hackathon.
-        foreach (var mentor in Mentors) mentor.Hackathon = null;
-        foreach (var team in Teams) team.CurrentHackathon = null;
     }
 
     private static string Require(string value, string paramName)
-    {
-        return string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"{paramName} is required.", paramName) : value;
-    }
+        => string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"{paramName} is required.", paramName) : value;
 }

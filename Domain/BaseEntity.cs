@@ -1,24 +1,11 @@
 namespace HackHub_DotNET.Domain;
 
-public abstract class BaseEntity
+public abstract class BaseEntity : IEntity
 {
-    //TODO fix, hashcode ignores id,equals doesn't
-    public long Id { get; protected set; }
-    public override bool Equals(object? obj)
-    {
-        if (obj is not BaseEntity other || GetType() != other.GetType())
-            return false;
+    public Guid Id { get; private set; } = Guid.NewGuid();
 
-        // Transient entities (not yet persisted) are only equal by reference.
-        if (Id == 0 || other.Id == 0)
-            return ReferenceEquals(this, other);
-
-        return Id == other.Id;
-    }
-
-    public override int GetHashCode() => GetType().GetHashCode();
-
-    public static bool operator ==(BaseEntity? left, BaseEntity? right) => Equals(left, right);
-
-    public static bool operator !=(BaseEntity? left, BaseEntity? right) => !Equals(left, right);
+    // Guards a reference to another aggregate. Domain code can only assert the
+    // id is present; existence of the referenced root is the caller's concern.
+    protected static Guid RequireId(Guid id, string paramName)
+        => id == Guid.Empty ? throw new ArgumentException($"{paramName} is required.", paramName) : id;
 }

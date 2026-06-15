@@ -2,16 +2,12 @@ using HackHub_DotNET.Domain.Enums;
 
 namespace HackHub_DotNET.Domain;
 
-public class User : BaseEntity
+public class User : BaseEntity, IAggregateRoot
 {
     public string Username { get; private set; }
     //Todo: hash and salt pw
     public string Password { get; private set; }
-    public UserRole UserRole { get; internal set; } = UserRole.User;
-
-    // Optional: a user is not necessarily tied to a team or a hackathon.
-    public Team? Team { get; internal set; }
-    public Hackathon? Hackathon { get; internal set; }
+    public UserRole UserRole { get; private set; } = UserRole.User;
 
     public User(string username, string password, UserRole userRole = UserRole.User)
     {
@@ -20,7 +16,9 @@ public class User : BaseEntity
         UserRole = userRole;
     }
 
-    public bool IsTeamLeader() => Team is not null && this == Team.Leader;
+    // Role is owned by the User aggregate. Team/Hackathon membership is tracked
+    // on those aggregates by id; an application service coordinates the two.
+    public void ChangeRole(UserRole role) => UserRole = role;
 
     private static string ValidateUsername(string username)
     {

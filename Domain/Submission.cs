@@ -1,55 +1,43 @@
+using HackHub_DotNET.Domain.ValueObjects;
+
 namespace HackHub_DotNET.Domain;
 
-public class Submission : BaseEntity
+public class Submission : BaseEntity, IAggregateRoot
 {
-    public string RepositoryUrl { get; private set; }
-    public Hackathon Hackathon { get; private set; }
-    public Team Team { get; private set; }
-    public User LastEditedBy { get; private set; }
+    public Url RepositoryUrl { get; private set; }
+    public Guid HackathonId { get; private set; }
+    public Guid TeamId { get; private set; }
+    public Guid LastEditedById { get; private set; }
 
-    // Optional: a submission is not scored/commented until it is graded.
-    public int? Score { get; private set; }
-    public string? GradeComment { get; private set; }
+    // Optional: a submission is not graded until a judge scores it.
+    public Grade? Grade { get; private set; }
 
     public DateTime UpdatedAt { get; private set; }
 
-    public Submission(string repositoryUrl, Hackathon hackathon, Team team, User lastEditedBy)
+    public Submission(Url repositoryUrl, Guid hackathonId, Guid teamId, Guid lastEditedById)
     {
-        RepositoryUrl = Require(repositoryUrl, nameof(repositoryUrl));
-        Hackathon = hackathon ?? throw new ArgumentNullException(nameof(hackathon));
-        Team = team ?? throw new ArgumentNullException(nameof(team));
-        LastEditedBy = lastEditedBy ?? throw new ArgumentNullException(nameof(lastEditedBy));
+        RepositoryUrl = repositoryUrl ?? throw new ArgumentNullException(nameof(repositoryUrl));
+        HackathonId = RequireId(hackathonId, nameof(hackathonId));
+        TeamId = RequireId(teamId, nameof(teamId));
+        LastEditedById = RequireId(lastEditedById, nameof(lastEditedById));
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateRepositoryUrl(string repositoryUrl, User editedBy)
+    public void UpdateRepositoryUrl(Url repositoryUrl, Guid editedById)
     {
-        RepositoryUrl = Require(repositoryUrl, nameof(repositoryUrl));
-        Touch(editedBy);
+        RepositoryUrl = repositoryUrl ?? throw new ArgumentNullException(nameof(repositoryUrl));
+        Touch(editedById);
     }
 
-    public void Grade(int score, string? comment, User gradedBy)
+    public void AssignGrade(Grade grade, Guid gradedById)
     {
-        if (score is < 0 or > 10)
-            throw new ArgumentOutOfRangeException(nameof(score), "Score must be between 0 and 10.");
-        if (comment is { Length: > 1000 })
-            throw new ArgumentException("Grade comment must be at most 1000 characters.", nameof(comment));
-
-        Score = score;
-        GradeComment = comment;
-        Touch(gradedBy);
+        Grade = grade ?? throw new ArgumentNullException(nameof(grade));
+        Touch(gradedById);
     }
 
-    private void Touch(User editedBy)
+    private void Touch(Guid editedById)
     {
-        LastEditedBy = editedBy ?? throw new ArgumentNullException(nameof(editedBy));
+        LastEditedById = RequireId(editedById, nameof(editedById));
         UpdatedAt = DateTime.UtcNow;
-    }
-
-    private static string Require(string value, string paramName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException($"{paramName} is required.", paramName);
-        return value;
     }
 }
