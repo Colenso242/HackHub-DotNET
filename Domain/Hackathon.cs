@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using HackHub_DotNET.Domain.Enums;
 using HackHub_DotNET.Domain.ValueObjects;
 
@@ -6,6 +7,7 @@ namespace HackHub_DotNET.Domain;
 public class Hackathon : BaseEntity, IAggregateRoot
 {
     public string Name { get; private set; }
+    [MinLength(3)] [MaxLength(2000)]
     public string Rules { get; private set; }
     public string Location { get; private set; }
     public double Prize { get; private set; }
