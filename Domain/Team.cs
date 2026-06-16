@@ -9,6 +9,8 @@ public class Team : BaseEntity, IAggregateRoot
     private readonly HashSet<Guid> _memberIds = new();
     public IReadOnlyCollection<Guid> MemberIds => _memberIds;
 
+    private Team() { } // for EF Core
+
     public Team(string name, Guid leaderId)
     {
         Name = ValidateName(name);
@@ -28,8 +30,8 @@ public class Team : BaseEntity, IAggregateRoot
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Team name is required.", nameof(name));
-        if (name.Length > 25)
-            throw new ArgumentException("Team name must be at most 25 characters.", nameof(name));
+        if (name.Length is < 3 or > 25)
+            throw new ArgumentException("Team name must be between 3 and 25 characters.", nameof(name));
         return name;
     }
 }

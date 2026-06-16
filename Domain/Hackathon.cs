@@ -64,4 +64,15 @@ public class Hackathon : BaseEntity, IAggregateRoot
 
     private static string Require(string value, string paramName)
         => string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"{paramName} is required.", paramName) : value;
+    
+    // Optional: a hackathon is considered inactive if it falls outside its scheduled period, even if the state hasn't been updated yet.
+    public bool IsActive =>
+        State is HackathonState.Enrollment or HackathonState.Ongoing
+        && Period.Contains(DateTime.UtcNow);
+
+    public void Terminate()
+    {
+        if (!this.IsActive) throw new InvalidOperationException("The hackathon is not active.");
+        State = HackathonState.Concluded;
+    }
 }
