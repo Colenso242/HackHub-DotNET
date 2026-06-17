@@ -10,16 +10,13 @@ public class Repository<T>(HackHubDbContext context) : IRepository<T>
     protected HackHubDbContext Context { get; } = context;
     protected DbSet<T> Set => Context.Set<T>();
 
-    public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => await Set.FindAsync([id], cancellationToken);
+    public async Task<T?> GetByIdAsync(Guid id)
+        => await Set.FindAsync([id]);
+    
 
-    public async Task<IReadOnlyList<T>> ListAsync(CancellationToken cancellationToken = default)
-        => await Set.ToListAsync(cancellationToken);
+    public async Task AddAsync(T entity)
+        => await Set.AddAsync(entity);
 
-    public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
-        => await Set.AddAsync(entity, cancellationToken);
-
-    public void Update(T entity) => Set.Update(entity);
-
-    public void Remove(T entity) => Set.Remove(entity);
+    public async Task<int> CommitAsync()
+        => await Context.SaveChangesAsync();
 }
