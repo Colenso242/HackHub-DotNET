@@ -2,4 +2,4 @@
 
 namespace HackHub_DotNET.Application.Hackathons.GetAllHackathons;
 
-public record GetAllHackathonsQuery() : IQuery<IEnumerable<GetAllHackathonsDto>>;
+public record GetAllHackathonsQuery() : IQuery<IReadOnlyList<GetAllHackathonsDto>>;

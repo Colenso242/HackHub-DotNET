@@ -13,7 +13,7 @@ public sealed class HackathonConfiguration : IEntityTypeConfiguration<Hackathon>
         builder.Property(h => h.Id).ValueGeneratedNever();
 
         builder.Property(h => h.Name).IsRequired().HasMaxLength(200);
-        builder.Property(h => h.Rules).IsRequired();
+        builder.Property(h => h.Rules).IsRequired().HasMaxLength(2000);
         builder.Property(h => h.Location).IsRequired().HasMaxLength(200);
         builder.Property(h => h.Prize);
         builder.Property(h => h.EnrollmentDeadline).IsRequired();

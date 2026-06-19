@@ -120,7 +120,8 @@ namespace HackHub_DotNET.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Rules")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("State")
                         .IsRequired()
